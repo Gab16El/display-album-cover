@@ -4,6 +4,10 @@
 
 <h1 align="center">Display Album Cover</h1>
 
+<p align="center">
+  <a href="https://github.com/Gab16El/display-album-cover/actions/workflows/ci.yml"><img src="https://github.com/Gab16El/display-album-cover/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+</p>
+
 Shows the song playing in Apple Music for Windows as a full-screen web view that adopts the colors of the album cover. A later phase targets an ESP32 display.
 
 ```
@@ -97,6 +101,10 @@ Everything runs on your PC. The only thing that leaves it is the track title and
 ## Disclaimer
 
 This is an independent project and is not affiliated with, endorsed by or sponsored by Apple Inc. Apple and Apple Music are trademarks of Apple Inc. Album artwork shown by the app belongs to its respective owners and is fetched at runtime; none is stored in this repository.
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks and conventions.
 
 ## License
 
