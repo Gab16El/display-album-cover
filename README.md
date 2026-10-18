@@ -8,7 +8,7 @@
   <a href="https://github.com/Gab16El/display-album-cover/actions/workflows/ci.yml"><img src="https://github.com/Gab16El/display-album-cover/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
 </p>
 
-Shows the song playing in Apple Music for Windows as a full-screen web view that adopts the colors of the album cover. A later phase targets an ESP32 display.
+Shows the song playing in Apple Music for Windows as a full-screen web view that adopts the colors of the album cover. Any phone, tablet or screen with a browser on your network can show it too.
 
 <p align="center">
   <img src="assets/screenshots/preview.webp" alt="Animated preview: the cover glows and pulses ripple through the background" width="720" />
@@ -17,6 +17,21 @@ Shows the song playing in Apple Music for Windows as a full-screen web view that
 ```
 Apple Music (Windows SMTC) -> Python bridge -> WebSocket -> React web app
 ```
+
+## About this project
+
+I made this for my own desk setup: a second screen that shows what is playing in Apple Music, with a background that moves with the music. It is a personal project that I share in case it is useful or fun for someone else. It does not try to solve a big problem, it is mostly decorative, and I maintain it when I have time. Issues and pull requests are welcome, with no promise of a quick answer.
+
+## Built with
+
+**Web**  
+![React](https://img.shields.io/badge/React-1c1c24?style=flat-square&logo=react&logoColor=61DAFB) ![TypeScript](https://img.shields.io/badge/TypeScript-1c1c24?style=flat-square&logo=typescript&logoColor=3178C6) ![Vite](https://img.shields.io/badge/Vite-1c1c24?style=flat-square&logo=vite&logoColor=646CFF) ![Redux Toolkit](https://img.shields.io/badge/Redux%20Toolkit-1c1c24?style=flat-square&logo=redux&logoColor=764ABC) ![Motion](https://img.shields.io/badge/Motion-1c1c24?style=flat-square&logo=framer&logoColor=FFFFFF) ![WebGL](https://img.shields.io/badge/WebGL-1c1c24?style=flat-square&logo=webgl&logoColor=FF5A3C)
+
+**Bridge**  
+![Python](https://img.shields.io/badge/Python-1c1c24?style=flat-square&logo=python&logoColor=3776AB) ![aiohttp](https://img.shields.io/badge/aiohttp-1c1c24?style=flat-square) ![NumPy](https://img.shields.io/badge/NumPy-1c1c24?style=flat-square&logo=numpy&logoColor=4DABCF) ![Pillow](https://img.shields.io/badge/Pillow-1c1c24?style=flat-square) ![Windows](https://img.shields.io/badge/Windows-1c1c24?style=flat-square)
+
+**Tooling**  
+![PyInstaller](https://img.shields.io/badge/PyInstaller-1c1c24?style=flat-square) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-1c1c24?style=flat-square&logo=githubactions&logoColor=2088FF) ![ESLint](https://img.shields.io/badge/ESLint-1c1c24?style=flat-square&logo=eslint&logoColor=4B32C3) ![pytest](https://img.shields.io/badge/pytest-1c1c24?style=flat-square&logo=pytest&logoColor=0A9EDC) ![Yarn](https://img.shields.io/badge/Yarn-1c1c24?style=flat-square&logo=yarn&logoColor=2C8EBB)
 
 ## Screenshots
 
