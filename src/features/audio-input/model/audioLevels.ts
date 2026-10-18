@@ -6,6 +6,8 @@ export interface AudioLevels {
   guitarL: number
   guitarR: number
   level: number
+  bpm: number
+  energy: number
   updatedAt: number
 }
 
@@ -17,5 +19,7 @@ export const audioLevels: AudioLevels = {
   guitarL: 0,
   guitarR: 0,
   level: 0,
+  bpm: 0,
+  energy: 0,
   updatedAt: 0,
 }

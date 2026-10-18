@@ -10,6 +10,8 @@ class AudioLevels:
     guitar_left: float = 0.0
     guitar_right: float = 0.0
     level: float = 0.0
+    bpm: float = 0.0
+    energy: float = 0.0
 
     def to_dict(self) -> dict:
         return {
@@ -20,4 +22,6 @@ class AudioLevels:
             "guitarL": self.guitar_left,
             "guitarR": self.guitar_right,
             "level": self.level,
+            "bpm": self.bpm,
+            "energy": self.energy,
         }

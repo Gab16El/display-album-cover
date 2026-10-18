@@ -9,6 +9,8 @@ interface AudioMessage {
   guitarL: number
   guitarR: number
   level: number
+  bpm: number
+  energy: number
 }
 
 export function connectAudioSocket(): () => void {
@@ -27,6 +29,8 @@ export function connectAudioSocket(): () => void {
       audioLevels.guitarL = data.guitarL
       audioLevels.guitarR = data.guitarR
       audioLevels.level = data.level
+      audioLevels.bpm = data.bpm
+      audioLevels.energy = data.energy
       audioLevels.updatedAt = performance.now()
     }
     socket.onclose = () => {

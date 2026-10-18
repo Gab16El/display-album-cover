@@ -27,4 +27,6 @@ class SyntheticAnalyzer:
             guitar_left=max(0.0, math.sin(t * 0.9)),
             guitar_right=max(0.0, math.sin(t * 0.9 + 2.2)),
             level=0.35 + 0.4 * hit,
+            bpm=BPM,
+            energy=0.6,
         )

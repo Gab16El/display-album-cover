@@ -12,12 +12,13 @@ out vec4 outColor;
 
 uniform vec2 uRes;
 uniform float uTime;
+uniform float uPhase;
 uniform sampler2D uCover;
 uniform vec3 uC0, uC1, uC2, uC3;
 uniform float uBass, uVoice, uGuitarL, uGuitarR, uFade;
 uniform vec4 uPulses[PULSES];
 uniform float uKinds[PULSES];
-uniform float uFlow, uDistort, uHalo, uRipple, uGrain, uSpeed;
+uniform float uFlow, uDistort, uHalo, uRipple, uGrain;
 
 vec2 mirror(vec2 x) { return 1.0 - abs(1.0 - mod(x, 2.0)); }
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -27,7 +28,7 @@ vec3 cover(vec2 p) { return texture(uCover, mirror(p + 0.5)).rgb; }
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
   vec2 p = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
-  float t = uTime * uSpeed;
+  float t = uPhase;
   float r = length(p);
 
   float wl = 1.0 - smoothstep(-0.45, 0.45, p.x);

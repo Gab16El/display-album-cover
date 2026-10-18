@@ -22,6 +22,12 @@ const SNARE_ONSET = 0.6
 const BASS_ONSET_LEVEL = 0.7
 const BASS_ONSET_RISE = 0.15
 const BASS_COOLDOWN = 0.35
+const PACE_EASE = 0.4
+const NEUTRAL_PACE = 0.4
+const SLOW_BPM = 70
+const FAST_BPM = 150
+const SPEED_MIN = 0.45
+const SPEED_RANGE = 1.4
 
 export interface VisualizerInputs {
   colors: [string, string, string, string]
@@ -43,9 +49,20 @@ interface LiveAudio {
   voice: number
   guitarL: number
   guitarR: number
+  bpm: number
+  energy: number
 }
 
-const IDLE_AUDIO: LiveAudio = { bass: 0.2, kick: 0, snare: 0, voice: 0.15, guitarL: 0, guitarR: 0 }
+const IDLE_AUDIO: LiveAudio = {
+  bass: 0.2,
+  kick: 0,
+  snare: 0,
+  voice: 0.15,
+  guitarL: 0,
+  guitarR: 0,
+  bpm: 0,
+  energy: 0,
+}
 
 export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSource): (() => void) | null {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false })
@@ -70,6 +87,8 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
   const pulses = new PulsePool()
   const previous = { kick: 0, snare: 0 }
   let bassAverage = 0
+  let pace = NEUTRAL_PACE
+  let phase = 0
   let bassCooldown = 0
   let fade = 0
   let last = performance.now()
@@ -110,6 +129,12 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     levels.snare = audio.snare
   }
 
+  const easePace = (audio: LiveAudio, dt: number) => {
+    const tempo = Math.min(1, Math.max(0, (audio.bpm - SLOW_BPM) / (FAST_BPM - SLOW_BPM)))
+    const target = audio.bpm > 0 ? 0.5 * tempo + 0.5 * audio.energy : NEUTRAL_PACE
+    pace += (target - pace) * Math.min(1, dt * PACE_EASE)
+  }
+
   const detectHits = (dt: number, aspect: number) => {
     if (levels.kick > KICK_ONSET && previous.kick <= KICK_ONSET) pulses.spawn(0, aspect)
     if (levels.snare > SNARE_ONSET && previous.snare <= SNARE_ONSET) pulses.spawn(1, aspect)
@@ -141,9 +166,13 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     easeParams(inputs.params, Math.min(1, dt * PARAM_EASE))
 
     resize()
-    easeAudio(readAudio(now), dt)
+    const audio = readAudio(now)
+    easeAudio(audio, dt)
+    easePace(audio, dt)
+    const speedScale = SPEED_MIN + pace * SPEED_RANGE
+    phase += dt * params.speed * speedScale
     detectHits(dt, canvas.width / canvas.height)
-    pulses.update(dt)
+    pulses.update(dt * speedScale)
     const decay = Math.exp(-dt * HIT_DECAY)
     audioLevels.kick *= decay
     audioLevels.snare *= decay
@@ -157,12 +186,12 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     gl.uniform1f(uniform('uGuitarR'), levels.guitarR)
     gl.uniform4fv(uniform('uPulses'), pulses.positions)
     gl.uniform1fv(uniform('uKinds'), pulses.kinds)
-    gl.uniform1f(uniform('uFlow'), params.flow)
+    gl.uniform1f(uniform('uPhase'), phase)
+    gl.uniform1f(uniform('uFlow'), params.flow * (0.7 + 0.6 * pace))
     gl.uniform1f(uniform('uDistort'), params.distort)
     gl.uniform1f(uniform('uHalo'), params.halo)
     gl.uniform1f(uniform('uRipple'), params.ripple)
     gl.uniform1f(uniform('uGrain'), params.grain)
-    gl.uniform1f(uniform('uSpeed'), params.speed)
     COLOR_UNIFORMS.forEach((name, i) => gl.uniform3f(uniform(name), ...colors[i]))
     gl.drawArrays(gl.TRIANGLES, 0, 3)
 

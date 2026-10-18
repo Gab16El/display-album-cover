@@ -5,6 +5,7 @@ import numpy as np
 import pyaudiowpatch as pyaudio
 
 from .levels import AudioLevels
+from .tempo_tracker import TempoTracker
 
 FRAME = 1024
 BANDS = {
@@ -26,6 +27,7 @@ SMOOTHING = {
     "guitar_right": (0.35, 0.1),
 }
 STATE_NAMES = ("bass", "kick", "snare", "voice", "guitar_left", "guitar_right", "level")
+ONSET_BAND = (30, 8000)
 
 
 class LoopbackAnalyzer:
@@ -35,6 +37,7 @@ class LoopbackAnalyzer:
         self._peaks = {name: 1e-3 for name in STATE_NAMES}
         self._levels = {name: 0.0 for name in STATE_NAMES}
         self._previous: np.ndarray | None = None
+        self._tempo: TempoTracker | None = None
         self._stamp = 0.0
         self._channels = 2
         self._window = np.hanning(FRAME).astype(np.float32)
@@ -64,6 +67,9 @@ class LoopbackAnalyzer:
             self._masks = {
                 name: (freqs >= low) & (freqs < high) for name, (low, high) in BANDS.items()
             }
+            self._masks["onset"] = (freqs >= ONSET_BAND[0]) & (freqs < ONSET_BAND[1])
+            self._tempo = TempoTracker(rate / FRAME)
+            self._peaks["onset"] = 1e-3
             self._stream = self._pa.open(
                 format=pyaudio.paFloat32,
                 channels=self._channels,
@@ -122,6 +128,7 @@ class LoopbackAnalyzer:
             self._smooth("guitar_left", float(np.maximum(left_fft - right_fft, 0)[guitar].mean()))
             self._smooth("guitar_right", float(np.maximum(right_fft - left_fft, 0)[guitar].mean()))
             self._levels["level"] = self._normalize("level", float(np.sqrt(np.mean(mono**2))))
+            self._tempo.push(self._normalize("onset", self._flux(mono_fft, "onset")))
             self._previous = mono_fft
             self._stamp = time.monotonic()
         return (None, pyaudio.paContinue)
@@ -131,4 +138,9 @@ class LoopbackAnalyzer:
             if time.monotonic() - self._stamp > STALE_SECONDS:
                 for name in self._levels:
                     self._levels[name] *= 0.85
-            return AudioLevels(**self._levels)
+            tempo = self._tempo
+            return AudioLevels(
+                **self._levels,
+                bpm=tempo.bpm if tempo else 0.0,
+                energy=tempo.energy if tempo else 0.0,
+            )
