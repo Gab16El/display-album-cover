@@ -3,6 +3,8 @@ import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { fullscreenChanged } from '../model/fullscreenSlice'
 import './FullscreenToggle.css'
 
+const FULLSCREEN_SUPPORTED = typeof document.documentElement.requestFullscreen === 'function'
+
 export function FullscreenToggle() {
   const dispatch = useAppDispatch()
   const active = useAppSelector((state) => state.fullscreen.active)
@@ -12,6 +14,8 @@ export function FullscreenToggle() {
     document.addEventListener('fullscreenchange', sync)
     return () => document.removeEventListener('fullscreenchange', sync)
   }, [dispatch])
+
+  if (!FULLSCREEN_SUPPORTED) return null
 
   const toggle = () => {
     if (document.fullscreenElement) void document.exitFullscreen()

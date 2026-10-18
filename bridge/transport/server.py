@@ -6,7 +6,8 @@ from aiohttp import WSMsgType, web
 
 from now_playing.poller import NowPlayingPoller
 
-LOCAL_ORIGIN_PREFIXES = ("http://localhost", "http://127.0.0.1")
+from .access import is_local_origin, make_token_guard, require_allowed_origin
+
 AUDIO_INTERVAL = 1 / 30
 
 
@@ -14,15 +15,9 @@ AUDIO_INTERVAL = 1 / 30
 async def cors(request: web.Request, handler):
     response = await handler(request)
     origin = request.headers.get("Origin", "")
-    if origin.startswith(LOCAL_ORIGIN_PREFIXES):
+    if origin and is_local_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
     return response
-
-
-def _require_local_origin(request: web.Request) -> None:
-    origin = request.headers.get("Origin")
-    if origin and not origin.startswith(LOCAL_ORIGIN_PREFIXES):
-        raise web.HTTPForbidden()
 
 
 async def _send_all(sockets: set[web.WebSocketResponse], payload: dict) -> None:
@@ -30,8 +25,13 @@ async def _send_all(sockets: set[web.WebSocketResponse], payload: dict) -> None:
     await asyncio.gather(*(ws.send_str(message) for ws in sockets), return_exceptions=True)
 
 
-def build_app(poller: NowPlayingPoller, analyzer, web_dir: Path | None = None) -> web.Application:
-    app = web.Application(middlewares=[cors])
+def build_app(
+    poller: NowPlayingPoller,
+    analyzer,
+    web_dir: Path | None = None,
+    token: str | None = None,
+) -> web.Application:
+    app = web.Application(middlewares=[make_token_guard(token), cors])
     sockets: set[web.WebSocketResponse] = set()
     audio_sockets: set[web.WebSocketResponse] = set()
 
@@ -45,7 +45,7 @@ def build_app(poller: NowPlayingPoller, analyzer, web_dir: Path | None = None) -
             await asyncio.sleep(AUDIO_INTERVAL)
 
     async def audio_ws_handler(request: web.Request) -> web.WebSocketResponse:
-        _require_local_origin(request)
+        require_allowed_origin(request)
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         audio_sockets.add(ws)
@@ -55,7 +55,7 @@ def build_app(poller: NowPlayingPoller, analyzer, web_dir: Path | None = None) -
         return ws
 
     async def ws_handler(request: web.Request) -> web.WebSocketResponse:
-        _require_local_origin(request)
+        require_allowed_origin(request)
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         sockets.add(ws)
