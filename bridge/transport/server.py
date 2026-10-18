@@ -9,6 +9,7 @@ from now_playing.poller import NowPlayingPoller
 from .access import is_local_origin, make_token_guard, require_allowed_origin
 
 AUDIO_INTERVAL = 1 / 30
+BENIGN_DISCONNECTS = (ConnectionResetError, ConnectionAbortedError)
 
 
 @web.middleware
@@ -18,6 +19,13 @@ async def cors(request: web.Request, handler):
     if origin and is_local_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
     return response
+
+
+def quiet_client_disconnects(loop: asyncio.AbstractEventLoop, context: dict) -> None:
+    # Windows raises these when a phone sleeps or a tab closes with a socket still open.
+    if isinstance(context.get("exception"), BENIGN_DISCONNECTS):
+        return
+    loop.default_exception_handler(context)
 
 
 async def _send_all(sockets: set[web.WebSocketResponse], payload: dict) -> None:
@@ -75,6 +83,7 @@ def build_app(
         return web.json_response(poller.state.to_dict())
 
     async def start_tasks(_: web.Application) -> None:
+        asyncio.get_running_loop().set_exception_handler(quiet_client_disconnects)
         poller.subscribe(broadcast)
         try:
             analyzer.start()
