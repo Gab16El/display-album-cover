@@ -36,15 +36,19 @@ The web app connects to `ws://localhost:8765/ws`. Override with `VITE_BRIDGE_HOS
 
 ```
 bridge/
-  now_playing/   SMTC reader, cover lookup, palette, poller
-  transport/     HTTP and WebSocket server
+  now_playing/     SMTC reader, cover lookup, palette, poller
+  audio_reactive/  loopback capture and band analysis
+  transport/       HTTP and WebSocket server
 src/
   app/           store, hooks, root component
   features/
     now-playing/        slice, socket middleware, screen components
     ambient-background/ animated color background
+    visualizer/         WebGL shader, audio socket, genre presets
     fullscreen/         fullscreen toggle
   shared/        config and small helpers
 ```
+
+The background is a WebGL2 shader that warps the cover and reacts to system audio (WASAPI loopback, bass/mid/treble and beat sent over `/audio`). The visual preset depends on the genre returned by iTunes. With `--mock` the bridge emits a synthetic beat.
 
 Covers are resolved through the public iTunes Search API, falling back to the SMTC thumbnail.

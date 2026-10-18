@@ -15,6 +15,7 @@ const initialState: NowPlayingState = {
   position: 0,
   duration: 0,
   coverVersion: null,
+  genre: null,
   palette: null,
 }
 

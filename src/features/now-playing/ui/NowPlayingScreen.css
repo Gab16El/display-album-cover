@@ -5,6 +5,8 @@
   display: grid;
   place-items: center;
   padding: clamp(1.5rem, 5vmin, 4rem);
+  color: #f5f5f7;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.45);
 }
 
 .screen__player {

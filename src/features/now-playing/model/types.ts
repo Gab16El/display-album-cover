@@ -4,6 +4,7 @@ export interface Palette {
   muted: string
   dark: string
   text: string
+  accents: string[]
 }
 
 export type PlaybackStatus = 'idle' | 'playing' | 'paused' | 'stopped'
@@ -18,5 +19,6 @@ export interface BridgePayload {
   position: number
   duration: number
   coverVersion: string | null
+  genre: string | null
   palette: Palette | null
 }

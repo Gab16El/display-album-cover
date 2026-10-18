@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useAppSelector } from '../../../app/hooks'
-import { selectHasTrack, selectPalette } from '../model/selectors'
+import { selectHasTrack } from '../model/selectors'
 import { CoverArt } from './CoverArt'
 import { IdleState } from './IdleState'
 import { ProgressBar } from './ProgressBar'
@@ -9,14 +9,9 @@ import './NowPlayingScreen.css'
 
 export function NowPlayingScreen() {
   const hasTrack = useAppSelector(selectHasTrack)
-  const palette = useAppSelector(selectPalette)
 
   return (
-    <motion.main
-      className="screen"
-      animate={{ color: palette?.text ?? '#f5f5f7' }}
-      transition={{ duration: 1.2 }}
-    >
+    <main className="screen">
       <AnimatePresence mode="wait">
         {hasTrack ? (
           <motion.section
@@ -36,6 +31,6 @@ export function NowPlayingScreen() {
           <IdleState key="idle" />
         )}
       </AnimatePresence>
-    </motion.main>
+    </main>
   )
 }

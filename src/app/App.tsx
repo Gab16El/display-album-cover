@@ -3,6 +3,7 @@ import { AmbientBackground } from '../features/ambient-background/ui/AmbientBack
 import { FullscreenToggle } from '../features/fullscreen/ui/FullscreenToggle'
 import { bridgeSocketStarted } from '../features/now-playing/model/nowPlayingSlice'
 import { NowPlayingScreen } from '../features/now-playing/ui/NowPlayingScreen'
+import { Visualizer } from '../features/visualizer/ui/Visualizer'
 import { useAppDispatch } from './hooks'
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
   return (
     <>
       <AmbientBackground />
+      <Visualizer />
       <NowPlayingScreen />
       <FullscreenToggle />
     </>
