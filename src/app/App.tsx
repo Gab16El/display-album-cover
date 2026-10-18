@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { AmbientBackground } from '../features/ambient-background/ui/AmbientBackground'
 import { FullscreenToggle } from '../features/fullscreen/ui/FullscreenToggle'
+import { KeepAwakeHint } from '../features/keep-awake/ui/KeepAwakeHint'
 import { bridgeSocketStarted } from '../features/now-playing/model/nowPlayingSlice'
 import { NowPlayingScreen } from '../features/now-playing/ui/NowPlayingScreen'
 import { Visualizer } from '../features/visualizer/ui/Visualizer'
@@ -19,6 +20,7 @@ export default function App() {
       <Visualizer />
       <NowPlayingScreen />
       <FullscreenToggle />
+      <KeepAwakeHint />
     </>
   )
 }

@@ -1,0 +1,16 @@
+.keep-awake-hint {
+  position: fixed;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  z-index: 2;
+  margin: 0;
+  padding: 0.55rem 1rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: #f5f5f7;
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  pointer-events: none;
+}

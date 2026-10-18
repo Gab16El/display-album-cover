@@ -58,7 +58,9 @@ For a phone or tablet the console prints a QR code and a link with a secret toke
 
 Skip the question with options: `--mode pc|phone|both`, `--no-browser`, `--port 8765`, `--token <fixed token>`. `--lan` is the same as `--mode both`. The bridge only accepts WebSocket connections from its own origin or from localhost.
 
-Tips for phones: on iPhone use Share, then Add to Home Screen for a full-screen view without the browser bar. Phones lock the screen on their own, so set auto-lock to never while it is on display.
+Keeping the screen on: on this PC the page asks the browser to stay awake by itself. On a phone or tablet the connection is plain HTTP, so the browser does not allow that directly. The page shows a small hint, and one tap starts a hidden looping video (`nosleep.js`) that keeps the screen awake. If a device still goes to sleep, set auto-lock to never (iPhone) or turn on Stay awake while charging (Android developer options).
+
+On iPhone use Share, then Add to Home Screen for a full-screen view without the browser bar.
 
 ## Branding
 
@@ -78,6 +80,7 @@ src/
     now-playing/        slice, socket middleware, screen components
     ambient-background/ animated color background
     audio-input/        audio levels socket and shared state
+    keep-awake/         keeps the screen from sleeping
     visualizer/         WebGL shader, pulse pool, genre presets
     fullscreen/         fullscreen toggle
   shared/        config and small helpers
