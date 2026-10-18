@@ -1,5 +1,7 @@
 aiohttp>=3.9
 Pillow>=10.0
+numpy>=1.26
+PyAudioWPatch>=0.2.12
 winrt-runtime>=3.0
 winrt-Windows.Media.Control>=3.0
 winrt-Windows.Storage.Streams>=3.0

@@ -19,6 +19,7 @@ class SmtcSnapshot:
     position: float
     duration: float
     thumbnail: bytes | None
+    genre: str | None = None
 
 
 async def _read_thumbnail(props) -> bytes | None:

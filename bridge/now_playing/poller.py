@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 from collections.abc import Awaitable, Callable
 
-from .itunes_cover import fetch_cover
+from .itunes_cover import CoverResult, lookup_cover
 from .palette import extract_palette
 from .smtc_source import SmtcSnapshot
 from .track import NowPlayingState, Track
@@ -23,8 +23,9 @@ class NowPlayingPoller:
         self._listeners.append(listener)
 
     async def _load_cover(self, track: Track, snapshot: SmtcSnapshot) -> None:
-        cover = await fetch_cover(track) if self._use_itunes else None
-        self.cover = cover or snapshot.thumbnail
+        found = await lookup_cover(track) if self._use_itunes else CoverResult(None, None)
+        self.cover = found.image or snapshot.thumbnail
+        self.state.genre = found.genre or snapshot.genre
         if self.cover:
             self.state.palette = extract_palette(self.cover)
             self.state.cover_version = hashlib.sha1(self.cover).hexdigest()[:10]

@@ -8,6 +8,7 @@ class Palette:
     muted: str
     dark: str
     text: str
+    accents: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class NowPlayingState:
     duration: float = 0.0
     cover_version: str | None = None
     palette: Palette | None = None
+    genre: str | None = None
     extra: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -42,6 +44,7 @@ class NowPlayingState:
             "position": self.position,
             "duration": self.duration,
             "coverVersion": self.cover_version,
+            "genre": self.genre,
             "palette": (
                 {
                     "dominant": p.dominant,
@@ -49,6 +52,7 @@ class NowPlayingState:
                     "muted": p.muted,
                     "dark": p.dark,
                     "text": p.text,
+                    "accents": list(p.accents),
                 }
                 if p
                 else None

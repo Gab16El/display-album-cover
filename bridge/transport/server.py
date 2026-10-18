@@ -6,6 +6,7 @@ from aiohttp import WSMsgType, web
 from now_playing.poller import NowPlayingPoller
 
 LOCAL_ORIGIN_PREFIXES = ("http://localhost", "http://127.0.0.1")
+AUDIO_INTERVAL = 1 / 30
 
 
 @web.middleware
@@ -17,13 +18,33 @@ async def cors(request: web.Request, handler):
     return response
 
 
-def build_app(poller: NowPlayingPoller) -> web.Application:
+async def _send_all(sockets: set[web.WebSocketResponse], payload: dict) -> None:
+    message = json.dumps(payload)
+    await asyncio.gather(*(ws.send_str(message) for ws in sockets), return_exceptions=True)
+
+
+def build_app(poller: NowPlayingPoller, analyzer) -> web.Application:
     app = web.Application(middlewares=[cors])
     sockets: set[web.WebSocketResponse] = set()
+    audio_sockets: set[web.WebSocketResponse] = set()
 
     async def broadcast(payload: dict) -> None:
-        message = json.dumps(payload)
-        await asyncio.gather(*(ws.send_str(message) for ws in sockets), return_exceptions=True)
+        await _send_all(sockets, payload)
+
+    async def audio_loop() -> None:
+        while True:
+            if audio_sockets:
+                await _send_all(audio_sockets, analyzer.snapshot().to_dict())
+            await asyncio.sleep(AUDIO_INTERVAL)
+
+    async def audio_ws_handler(request: web.Request) -> web.WebSocketResponse:
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        audio_sockets.add(ws)
+        async for _ in ws:
+            pass
+        audio_sockets.discard(ws)
+        return ws
 
     async def ws_handler(request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
@@ -44,16 +65,23 @@ def build_app(poller: NowPlayingPoller) -> web.Application:
     async def now_playing_handler(_: web.Request) -> web.Response:
         return web.json_response(poller.state.to_dict())
 
-    async def start_poller(_: web.Application) -> None:
+    async def start_tasks(_: web.Application) -> None:
         poller.subscribe(broadcast)
-        app["poller_task"] = asyncio.create_task(poller.run())
+        try:
+            analyzer.start()
+        except OSError as exc:
+            print(f"audio capture unavailable: {exc}")
+        app["tasks"] = [asyncio.create_task(poller.run()), asyncio.create_task(audio_loop())]
 
-    async def stop_poller(_: web.Application) -> None:
-        app["poller_task"].cancel()
+    async def stop_tasks(_: web.Application) -> None:
+        for task in app["tasks"]:
+            task.cancel()
+        analyzer.stop()
 
     app.router.add_get("/ws", ws_handler)
+    app.router.add_get("/audio", audio_ws_handler)
     app.router.add_get("/cover", cover_handler)
     app.router.add_get("/now-playing", now_playing_handler)
-    app.on_startup.append(start_poller)
-    app.on_cleanup.append(stop_poller)
+    app.on_startup.append(start_tasks)
+    app.on_cleanup.append(stop_tasks)
     return app
