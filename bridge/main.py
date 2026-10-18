@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import sys
 import webbrowser
 from pathlib import Path
@@ -13,6 +14,8 @@ from transport.server import build_app
 
 HOST = "127.0.0.1"
 PORT = 8765
+READY_ATTEMPTS = 100
+READY_INTERVAL = 0.1
 
 
 def _real_analyzer():
@@ -23,6 +26,18 @@ def _real_analyzer():
     except ImportError as exc:
         print(f"audio capture unavailable: {exc}")
         return NullAnalyzer()
+
+
+async def _open_when_ready(url: str, port: int) -> None:
+    for _ in range(READY_ATTEMPTS):
+        try:
+            _, writer = await asyncio.open_connection(HOST, port)
+        except OSError:
+            await asyncio.sleep(READY_INTERVAL)
+            continue
+        writer.close()
+        break
+    webbrowser.open(url)
 
 
 def _web_dir() -> Path | None:
@@ -53,7 +68,11 @@ def main() -> None:
     app = build_app(poller, analyzer, web_dir)
     url = f"http://localhost:{args.port}"
     if web_dir and not args.no_browser:
-        app.on_startup.append(lambda _: webbrowser.open(url))
+
+        async def open_browser(application: web.Application) -> None:
+            application["browser_task"] = asyncio.create_task(_open_when_ready(url, args.port))
+
+        app.on_startup.append(open_browser)
     if web_dir:
         print(f"Display Album Cover running at {url}. Close this window to quit.")
 
