@@ -1,17 +1,15 @@
 export interface AudioLevels {
   bass: number
-  mid: number
-  treble: number
+  kick: number
+  snare: number
   level: number
-  beat: number
   updatedAt: number
 }
 
 export const audioLevels: AudioLevels = {
   bass: 0,
-  mid: 0,
-  treble: 0,
+  kick: 0,
+  snare: 0,
   level: 0,
-  beat: 0,
   updatedAt: 0,
 }

@@ -12,7 +12,7 @@ const FADE_IN_PER_SECOND = 0.8
 const COLOR_EASE = 2
 const PARAM_EASE = 1.5
 const AUDIO_EASE = 14
-const BEAT_DECAY = 6
+const HIT_DECAY = 7
 
 export interface VisualizerInputs {
   colors: [string, string, string, string]
@@ -46,7 +46,7 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
 
   const colors: Rgb[] = [0, 1, 2, 3].map(() => [0.04, 0.04, 0.06] as Rgb)
   const params: VisualParams = { ...paramsForGenre(null) }
-  const levels = { bass: 0, mid: 0, treble: 0 }
+  const levels = { bass: 0, kick: 0, snare: 0 }
   let fade = 0
   let last = performance.now()
   let frameId = 0
@@ -78,7 +78,7 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     const t = now / 1000
     return live
       ? audioLevels
-      : { bass: 0.2 + 0.1 * Math.sin(t * 1.2), mid: 0.3, treble: 0.2, beat: 0 }
+      : { bass: 0.2 + 0.1 * Math.sin(t * 1.2), kick: 0, snare: 0 }
   }
 
   const frame = (now: number) => {
@@ -99,17 +99,18 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     const audio = readAudio(now)
     const audioK = Math.min(1, dt * AUDIO_EASE)
     levels.bass += (audio.bass - levels.bass) * audioK
-    levels.mid += (audio.mid - levels.mid) * audioK
-    levels.treble += (audio.treble - levels.treble) * audioK
-    audioLevels.beat *= Math.exp(-dt * BEAT_DECAY)
+    levels.kick = audio.kick
+    levels.snare = audio.snare
+    const decay = Math.exp(-dt * HIT_DECAY)
+    audioLevels.kick *= decay
+    audioLevels.snare *= decay
 
     resize()
     gl.uniform2f(uniform('uRes'), canvas.width, canvas.height)
     gl.uniform1f(uniform('uTime'), now / 1000)
     gl.uniform1f(uniform('uBass'), levels.bass)
-    gl.uniform1f(uniform('uMid'), levels.mid)
-    gl.uniform1f(uniform('uTreble'), levels.treble)
-    gl.uniform1f(uniform('uBeat'), audioLevels.beat)
+    gl.uniform1f(uniform('uKick'), levels.kick)
+    gl.uniform1f(uniform('uSnare'), levels.snare)
     gl.uniform1f(uniform('uFade'), fade)
     gl.uniform1f(uniform('uWarp'), params.warp)
     gl.uniform1f(uniform('uKaleido'), params.kaleido)

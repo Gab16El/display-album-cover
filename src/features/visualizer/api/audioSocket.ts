@@ -3,10 +3,9 @@ import { audioLevels } from '../model/audioLevels'
 
 interface AudioMessage {
   bass: number
-  mid: number
-  treble: number
+  kick: number
+  snare: number
   level: number
-  beat: boolean
 }
 
 export function connectAudioSocket(): () => void {
@@ -19,10 +18,9 @@ export function connectAudioSocket(): () => void {
     socket.onmessage = (event: MessageEvent<string>) => {
       const data = JSON.parse(event.data) as AudioMessage
       audioLevels.bass = data.bass
-      audioLevels.mid = data.mid
-      audioLevels.treble = data.treble
+      audioLevels.kick = Math.max(data.kick, audioLevels.kick)
+      audioLevels.snare = Math.max(data.snare, audioLevels.snare)
       audioLevels.level = data.level
-      if (data.beat) audioLevels.beat = 1
       audioLevels.updatedAt = performance.now()
     }
     socket.onclose = () => {

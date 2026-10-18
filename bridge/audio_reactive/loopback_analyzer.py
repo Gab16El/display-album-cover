@@ -7,29 +7,30 @@ import pyaudiowpatch as pyaudio
 from .levels import AudioLevels
 
 FRAME = 1024
-BANDS = {"bass": (20, 150), "mid": (150, 2000), "treble": (2000, 8000)}
+BASS_BAND = (30, 200)
+KICK_BAND = (30, 120)
+SNARE_BAND = (200, 8000)
 STALE_SECONDS = 0.3
-BEAT_COOLDOWN = 0.25
-BEAT_RATIO = 1.35
 PEAK_DECAY = 0.997
-RISE = 0.6
-FALL = 0.15
+PULSE_DECAY = 0.8
+KICK_THRESHOLD = 0.3
+SNARE_THRESHOLD = 0.55
+BASS_RISE = 0.5
+BASS_FALL = 0.12
 
 
 class LoopbackAnalyzer:
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._levels = {"bass": 0.0, "mid": 0.0, "treble": 0.0, "level": 0.0}
-        self._peaks = {"bass": 1e-3, "mid": 1e-3, "treble": 1e-3, "level": 1e-3}
-        self._bass_avg = 0.0
-        self._last_beat = 0.0
-        self._beat_pending = False
+        self._stop_event = threading.Event()
+        self._peaks = {"bass": 1e-3, "kick": 1e-3, "snare": 1e-3, "level": 1e-3}
+        self._levels = {"bass": 0.0, "kick": 0.0, "snare": 0.0, "level": 0.0}
+        self._previous: np.ndarray | None = None
         self._stamp = 0.0
         self._channels = 2
         self._window = np.hanning(FRAME).astype(np.float32)
         self._pa = None
         self._stream = None
-        self._stop_event = threading.Event()
 
     def start(self) -> None:
         ready = threading.Event()
@@ -52,7 +53,9 @@ class LoopbackAnalyzer:
             self._channels = int(device["maxInputChannels"])
             freqs = np.fft.rfftfreq(FRAME, 1.0 / rate)
             self._masks = {
-                name: (freqs >= low) & (freqs < high) for name, (low, high) in BANDS.items()
+                "bass": (freqs >= BASS_BAND[0]) & (freqs < BASS_BAND[1]),
+                "kick": (freqs >= KICK_BAND[0]) & (freqs < KICK_BAND[1]),
+                "snare": (freqs >= SNARE_BAND[0]) & (freqs < SNARE_BAND[1]),
             }
             self._stream = self._pa.open(
                 format=pyaudio.paFloat32,
@@ -72,33 +75,33 @@ class LoopbackAnalyzer:
         self._stream.close()
         self._pa.terminate()
 
-    def _smooth(self, name: str, raw: float) -> None:
+    def _normalize(self, name: str, raw: float) -> float:
         self._peaks[name] = max(self._peaks[name] * PEAK_DECAY, raw, 1e-3)
-        target = min(raw / self._peaks[name], 1.0)
-        current = self._levels[name]
-        speed = RISE if target > current else FALL
-        self._levels[name] = current + (target - current) * speed
+        return min(raw / self._peaks[name], 1.0)
+
+    def _flux(self, spectrum: np.ndarray, mask: np.ndarray) -> float:
+        if self._previous is None:
+            return 0.0
+        return float(np.maximum(spectrum[mask] - self._previous[mask], 0.0).sum())
+
+    def _pulse(self, name: str, raw_flux: float, threshold: float) -> None:
+        onset = max(0.0, (self._normalize(name, raw_flux) - threshold) / (1 - threshold))
+        self._levels[name] = max(self._levels[name] * PULSE_DECAY, onset)
 
     def _on_audio(self, data, frame_count, time_info, status):
         mono = np.frombuffer(data, dtype=np.float32).reshape(-1, self._channels).mean(axis=1)
         if mono.size != FRAME:
             return (None, pyaudio.paContinue)
         spectrum = np.abs(np.fft.rfft(mono * self._window))
-        now = time.monotonic()
         with self._lock:
-            for name, mask in self._masks.items():
-                self._smooth(name, float(spectrum[mask].mean()))
-            self._smooth("level", float(np.sqrt(np.mean(mono**2))))
-            bass = self._levels["bass"]
-            if (
-                bass > self._bass_avg * BEAT_RATIO
-                and bass > 0.35
-                and now - self._last_beat > BEAT_COOLDOWN
-            ):
-                self._beat_pending = True
-                self._last_beat = now
-            self._bass_avg += (bass - self._bass_avg) * 0.08
-            self._stamp = now
+            bass = self._normalize("bass", float(spectrum[self._masks["bass"]].mean()))
+            speed = BASS_RISE if bass > self._levels["bass"] else BASS_FALL
+            self._levels["bass"] += (bass - self._levels["bass"]) * speed
+            self._pulse("kick", self._flux(spectrum, self._masks["kick"]), KICK_THRESHOLD)
+            self._pulse("snare", self._flux(spectrum, self._masks["snare"]), SNARE_THRESHOLD)
+            self._levels["level"] = self._normalize("level", float(np.sqrt(np.mean(mono**2))))
+            self._previous = spectrum
+            self._stamp = time.monotonic()
         return (None, pyaudio.paContinue)
 
     def snapshot(self) -> AudioLevels:
@@ -106,5 +109,4 @@ class LoopbackAnalyzer:
             if time.monotonic() - self._stamp > STALE_SECONDS:
                 for name in self._levels:
                     self._levels[name] *= 0.85
-            beat, self._beat_pending = self._beat_pending, False
-            return AudioLevels(beat=beat, **self._levels)
+            return AudioLevels(**self._levels)

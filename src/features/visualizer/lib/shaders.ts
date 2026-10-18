@@ -12,7 +12,7 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform sampler2D uCover;
 uniform vec3 uC0, uC1, uC2, uC3;
-uniform float uBass, uMid, uTreble, uBeat, uFade;
+uniform float uBass, uKick, uSnare, uFade;
 uniform float uWarp, uKaleido, uSwirl, uSpeed, uBlur, uGrade;
 
 vec2 mirror(vec2 x) { return 1.0 - abs(1.0 - mod(x, 2.0)); }
@@ -31,20 +31,20 @@ void main() {
     p = length(p) * vec2(cos(a), sin(a));
   }
 
-  float amp = uWarp * (0.12 + uBass * 0.3);
+  float amp = uWarp * (0.1 + uBass * 0.2 + uKick * 0.3);
   vec2 q = p;
   for (int i = 0; i < 3; i++) {
     float fi = float(i);
     q += amp * vec2(sin(q.y * 3.0 + t + fi * 1.7), cos(q.x * 3.0 - t * 1.1 + fi * 2.3));
   }
 
-  float swirl = uSwirl * (0.5 + uMid) * exp(-length(q) * 1.2) * sin(t * 0.6);
+  float swirl = uSwirl * (0.4 + uBass * 0.8 + uSnare * 0.4) * exp(-length(q) * 1.2) * sin(t * 0.6);
   float cs = cos(swirl);
   float sn = sin(swirl);
   q = mat2(cs, -sn, sn, cs) * q;
 
-  vec2 tuv = q * (0.9 - uBeat * 0.05);
-  float ab = 0.004 + uTreble * 0.012;
+  vec2 tuv = q * (0.9 - uKick * 0.07);
+  float ab = 0.004 + uSnare * 0.02;
   vec3 col = vec3(
     cover(tuv + vec2(ab, 0.0)).r,
     cover(tuv).g,
@@ -54,7 +54,7 @@ void main() {
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
   vec3 ramp = mix(uC3, mix(uC0, uC1, smoothstep(0.35, 0.8, lum)), smoothstep(0.05, 0.5, lum));
   col = mix(col, ramp * (0.6 + lum), uGrade);
-  col += mix(uC1, uC2, 0.5) * uBeat * 0.14;
+  col += mix(uC1, uC2, 0.5) * (uKick * 0.14 + uSnare * 0.1);
 
   float vig = smoothstep(1.25, 0.25, length(uv - 0.5) * 1.5);
   col *= (0.35 + 0.4 * vig) * uFade;
