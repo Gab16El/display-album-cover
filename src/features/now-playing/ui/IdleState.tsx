@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
 import { useAppSelector } from '../../../app/hooks'
+import { BrandMark } from '../../../shared/ui/BrandMark'
 import './IdleState.css'
 
 const MESSAGES = {
@@ -20,10 +21,12 @@ export function IdleState() {
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="idle__pulse"
-        animate={{ scale: [1, 1.25, 1], opacity: [0.5, 1, 0.5] }}
+        className="idle__mark"
+        animate={{ scale: [1, 1.08, 1], opacity: [0.7, 1, 0.7] }}
         transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-      />
+      >
+        <BrandMark width={88} />
+      </motion.div>
       <h1 className="idle__title">{message.title}</h1>
       <p className="idle__hint">{message.hint}</p>
     </motion.div>

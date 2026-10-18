@@ -6,11 +6,8 @@
   text-align: center;
 }
 
-.idle__pulse {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: currentColor;
+.idle__mark {
+  display: grid;
   margin-bottom: 1rem;
 }
 

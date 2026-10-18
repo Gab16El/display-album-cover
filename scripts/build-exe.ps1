@@ -11,6 +11,7 @@ $python = Join-Path $root 'bridge\.venv\Scripts\python.exe'
 & $python -m PyInstaller (Join-Path $root 'bridge\main.py') `
     --name DisplayAlbumCover `
     --onefile `
+    --icon (Join-Path $root 'assets\branding\app-icon.ico') `
     --noconfirm `
     --paths (Join-Path $root 'bridge') `
     --add-data "$(Join-Path $root 'dist');web" `

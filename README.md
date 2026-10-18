@@ -1,4 +1,8 @@
-# display-album-cover
+<p align="center">
+  <img src="assets/branding/mark-iridescent.svg" alt="Display Album Cover logo" width="96" />
+</p>
+
+<h1 align="center">Display Album Cover</h1>
 
 Shows the song playing in Apple Music for Windows as a full-screen web view that adopts the colors of the album cover. A later phase targets an ESP32 display.
 
@@ -39,6 +43,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
 ```
 
 This builds the web app, bundles it with the bridge using PyInstaller and writes `release\DisplayAlbumCover.exe`. Run it and the browser opens at `http://localhost:8765`. Use `--no-browser` to skip that and `--port` to change the port. The bridge only accepts WebSocket connections from local origins.
+
+## Branding
+
+Logo files live in `assets/branding/`: the iridescent and `currentColor` marks, light and dark lockups, the app icon tile and `app-icon.ico`, used for the executable. The favicon is the app icon tile.
 
 ## Structure
 
