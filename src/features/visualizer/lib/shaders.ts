@@ -25,17 +25,17 @@ void main() {
   float t = uTime * uSpeed;
   float r = length(p);
 
-  float amp = uFlow * (0.05 + uBass * 0.07);
+  float amp = uFlow * (0.02 + uBass * 0.035);
   vec2 q = p;
   q += amp * vec2(sin(q.y * 2.2 + t * 0.7), cos(q.x * 2.2 - t * 0.6));
   q += amp * 0.6 * vec2(sin(q.y * 4.1 - t * 0.5), cos(q.x * 3.7 + t * 0.4));
-  q *= 0.85 - uKick * 0.02 * uRipple;
+  q *= 1.0 - uKick * 0.015 * uRipple;
 
   vec3 col = texture(uCover, mirror(q + 0.5)).rgb;
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
-  col = mix(vec3(lum), col, 0.6);
-  col = mix(col, col * mix(uC0, uC1, 0.5) * 1.6, 0.25);
-  col *= 0.38;
+  col = mix(vec3(lum), col, 0.7);
+  col = mix(col, col * mix(uC0, uC1, 0.5) * 1.6, 0.15);
+  col *= 0.3;
 
   float edge = smoothstep(0.25, 1.0, r);
   col += uC1 * edge * (0.04 + uBass * 0.16);

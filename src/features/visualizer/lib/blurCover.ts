@@ -1,6 +1,6 @@
-const SIZE = 256
-const BLUR_PX = 22
-const OVERSCAN = 1.25
+const SIZE = 768
+const BLUR_PX = 3
+const OVERSCAN = 1.05
 
 export function blurCover(image: HTMLImageElement): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
