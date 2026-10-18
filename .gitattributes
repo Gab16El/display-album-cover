@@ -1,0 +1,5 @@
+* text=auto eol=lf
+
+*.css linguist-detectable=false
+*.html linguist-detectable=false
+eslint.config.js linguist-detectable=false
