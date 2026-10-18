@@ -89,3 +89,15 @@ src/
 The background is a WebGL2 shader that warps the cover and reacts to system audio (WASAPI loopback, bass/mid/treble and beat sent over `/audio`). The visual preset depends on the genre returned by iTunes. With `--mock` the bridge emits a synthetic beat.
 
 Covers are resolved through the public iTunes Search API, falling back to the SMTC thumbnail.
+
+## Privacy
+
+Everything runs on your PC. The only thing that leaves it is the track title and artist, sent to the public Apple iTunes Search API to find the album cover and genre. System audio is analyzed locally to drive the animation and is never recorded or sent anywhere. When you share the view with a phone or tablet, it is served only on your local network and protected by a secret token; the default mode (`--mode pc`) does not expose anything to the network.
+
+## Disclaimer
+
+This is an independent project and is not affiliated with, endorsed by or sponsored by Apple Inc. Apple and Apple Music are trademarks of Apple Inc. Album artwork shown by the app belongs to its respective owners and is fetched at runtime; none is stored in this repository.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
