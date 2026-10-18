@@ -32,6 +32,14 @@ yarn dev
 
 The web app connects to `ws://localhost:8765/ws`. Override with `VITE_BRIDGE_HOST`.
 
+## Build the executable
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
+```
+
+This builds the web app, bundles it with the bridge using PyInstaller and writes `release\DisplayAlbumCover.exe`. Run it and the browser opens at `http://localhost:8765`. Use `--no-browser` to skip that and `--port` to change the port. The bridge only accepts WebSocket connections from local origins.
+
 ## Structure
 
 ```

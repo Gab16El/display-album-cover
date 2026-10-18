@@ -1,4 +1,6 @@
-const bridgeHost: string = import.meta.env.VITE_BRIDGE_HOST ?? 'localhost:8765'
+const devHost = 'localhost:8765'
+const bridgeHost: string =
+  import.meta.env.VITE_BRIDGE_HOST ?? (import.meta.env.PROD ? window.location.host : devHost)
 
 export const BRIDGE_WS_URL = `ws://${bridgeHost}/ws`
 export const BRIDGE_AUDIO_WS_URL = `ws://${bridgeHost}/audio`

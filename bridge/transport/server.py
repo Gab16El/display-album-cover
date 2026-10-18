@@ -1,5 +1,6 @@
 import asyncio
 import json
+from pathlib import Path
 
 from aiohttp import WSMsgType, web
 
@@ -18,12 +19,18 @@ async def cors(request: web.Request, handler):
     return response
 
 
+def _require_local_origin(request: web.Request) -> None:
+    origin = request.headers.get("Origin")
+    if origin and not origin.startswith(LOCAL_ORIGIN_PREFIXES):
+        raise web.HTTPForbidden()
+
+
 async def _send_all(sockets: set[web.WebSocketResponse], payload: dict) -> None:
     message = json.dumps(payload)
     await asyncio.gather(*(ws.send_str(message) for ws in sockets), return_exceptions=True)
 
 
-def build_app(poller: NowPlayingPoller, analyzer) -> web.Application:
+def build_app(poller: NowPlayingPoller, analyzer, web_dir: Path | None = None) -> web.Application:
     app = web.Application(middlewares=[cors])
     sockets: set[web.WebSocketResponse] = set()
     audio_sockets: set[web.WebSocketResponse] = set()
@@ -38,6 +45,7 @@ def build_app(poller: NowPlayingPoller, analyzer) -> web.Application:
             await asyncio.sleep(AUDIO_INTERVAL)
 
     async def audio_ws_handler(request: web.Request) -> web.WebSocketResponse:
+        _require_local_origin(request)
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         audio_sockets.add(ws)
@@ -47,6 +55,7 @@ def build_app(poller: NowPlayingPoller, analyzer) -> web.Application:
         return ws
 
     async def ws_handler(request: web.Request) -> web.WebSocketResponse:
+        _require_local_origin(request)
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         sockets.add(ws)
@@ -86,6 +95,14 @@ def build_app(poller: NowPlayingPoller, analyzer) -> web.Application:
     app.router.add_get("/audio", audio_ws_handler)
     app.router.add_get("/cover", cover_handler)
     app.router.add_get("/now-playing", now_playing_handler)
+    if web_dir:
+
+        async def index_handler(_: web.Request) -> web.FileResponse:
+            return web.FileResponse(web_dir / "index.html")
+
+        app.router.add_get("/", index_handler)
+        app.router.add_static("/", web_dir)
+
     app.on_startup.append(start_tasks)
     app.on_shutdown.append(close_sockets)
     app.on_cleanup.append(stop_tasks)
