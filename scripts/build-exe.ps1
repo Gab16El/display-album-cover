@@ -1,14 +1,22 @@
+param(
+    [string]$Python
+)
+
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
+if (-not $Python) {
+    $venvPython = Join-Path $root 'bridge\.venv\Scripts\python.exe'
+    $Python = if (Test-Path $venvPython) { $venvPython } else { 'python' }
+}
+
 yarn install --frozen-lockfile
 yarn build
 
-$python = Join-Path $root 'bridge\.venv\Scripts\python.exe'
-& $python -m pip install --quiet pyinstaller
+& $Python -m pip install --quiet pyinstaller
 
-& $python -m PyInstaller (Join-Path $root 'bridge\main.py') `
+& $Python -m PyInstaller (Join-Path $root 'bridge\main.py') `
     --name DisplayAlbumCover `
     --onefile `
     --icon (Join-Path $root 'assets\branding\app-icon.ico') `

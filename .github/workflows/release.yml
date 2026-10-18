@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and publish, for example v0.1.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows-exe:
+    name: Build and publish the Windows executable
+    runs-on: windows-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: bridge/requirements.txt
+
+      - name: Install bridge dependencies
+        run: pip install -r bridge/requirements.txt
+
+      - name: Build the executable
+        run: ./scripts/build-exe.ps1
+
+      - name: Write checksum and release notes
+        run: |
+          $hash = (Get-FileHash release/DisplayAlbumCover.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  DisplayAlbumCover.exe" | Out-File -FilePath release/SHA256SUMS.txt -Encoding ascii
+          @"
+          Windows executable for Display Album Cover.
+
+          - Needs Windows 10 or 11 and the Apple Music app from the Microsoft Store.
+          - Double click it and choose to open it on this PC or to show a QR code for a phone or tablet.
+          - The file is not code signed, so Windows SmartScreen may warn the first time. Choose More info, then Run anyway.
+          - SHA-256: ``$hash``
+          "@ | Out-File -FilePath release/NOTES.md -Encoding utf8
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG release/DisplayAlbumCover.exe release/SHA256SUMS.txt --clobber
+          } else {
+            gh release create $env:TAG release/DisplayAlbumCover.exe release/SHA256SUMS.txt --title $env:TAG --notes-file release/NOTES.md --generate-notes --verify-tag
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed' }

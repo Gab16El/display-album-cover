@@ -30,6 +30,10 @@ Apple Music (Windows SMTC) -> Python bridge -> WebSocket -> React web app
 
 These were captured with the built-in demo source (`--mock`), which draws its own covers, so no real album artwork is stored in this repository. The colors, glow and distortion follow whatever is playing.
 
+## Download
+
+Grab `DisplayAlbumCover.exe` from the [Releases page](https://github.com/Gab16El/display-album-cover/releases/latest). It needs Windows 10 or 11 and the Apple Music app from the Microsoft Store. The file is not code signed, so SmartScreen may warn the first time: choose More info, then Run anyway. Each release lists the SHA-256 of the file so you can check it.
+
 ## Requirements
 
 - Windows 10/11 with the Apple Music app (Microsoft Store)
@@ -62,7 +66,7 @@ The web app connects to `ws://localhost:8765/ws`. Override with `VITE_BRIDGE_HOS
 powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
 ```
 
-This builds the web app, bundles it with the bridge using PyInstaller and writes `release\DisplayAlbumCover.exe`.
+This builds the web app, bundles it with the bridge using PyInstaller and writes `release\DisplayAlbumCover.exe`. Pushing a tag such as `v0.1.0` runs the Release workflow, which builds the same executable on GitHub and attaches it to a release.
 
 ## Run the executable
 
