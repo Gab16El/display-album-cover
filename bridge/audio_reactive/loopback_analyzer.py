@@ -29,32 +29,48 @@ class LoopbackAnalyzer:
         self._window = np.hanning(FRAME).astype(np.float32)
         self._pa = None
         self._stream = None
+        self._stop_event = threading.Event()
 
     def start(self) -> None:
-        self._pa = pyaudio.PyAudio()
-        device = self._pa.get_default_wasapi_loopback()
-        rate = int(device["defaultSampleRate"])
-        self._channels = int(device["maxInputChannels"])
-        self._freqs = np.fft.rfftfreq(FRAME, 1.0 / rate)
-        self._masks = {
-            name: (self._freqs >= low) & (self._freqs < high)
-            for name, (low, high) in BANDS.items()
-        }
-        self._stream = self._pa.open(
-            format=pyaudio.paFloat32,
-            channels=self._channels,
-            rate=rate,
-            frames_per_buffer=FRAME,
-            input=True,
-            input_device_index=device["index"],
-            stream_callback=self._on_audio,
-        )
+        ready = threading.Event()
+        self._error: OSError | None = None
+        self._thread = threading.Thread(target=self._run, args=(ready,), daemon=True)
+        self._thread.start()
+        ready.wait(timeout=5)
+        if self._error:
+            raise self._error
 
     def stop(self) -> None:
-        if self._stream:
-            self._stream.close()
-        if self._pa:
-            self._pa.terminate()
+        self._stop_event.set()
+
+    def _run(self, ready: threading.Event) -> None:
+        # PyAudio initializes COM on its thread; keep it away from the winrt thread.
+        try:
+            self._pa = pyaudio.PyAudio()
+            device = self._pa.get_default_wasapi_loopback()
+            rate = int(device["defaultSampleRate"])
+            self._channels = int(device["maxInputChannels"])
+            freqs = np.fft.rfftfreq(FRAME, 1.0 / rate)
+            self._masks = {
+                name: (freqs >= low) & (freqs < high) for name, (low, high) in BANDS.items()
+            }
+            self._stream = self._pa.open(
+                format=pyaudio.paFloat32,
+                channels=self._channels,
+                rate=rate,
+                frames_per_buffer=FRAME,
+                input=True,
+                input_device_index=device["index"],
+                stream_callback=self._on_audio,
+            )
+        except OSError as exc:
+            self._error = exc
+            ready.set()
+            return
+        ready.set()
+        self._stop_event.wait()
+        self._stream.close()
+        self._pa.terminate()
 
     def _smooth(self, name: str, raw: float) -> None:
         self._peaks[name] = max(self._peaks[name] * PEAK_DECAY, raw, 1e-3)

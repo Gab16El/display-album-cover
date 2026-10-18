@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import traceback
 from collections.abc import Awaitable, Callable
 
 from .itunes_cover import CoverResult, lookup_cover
@@ -57,6 +58,6 @@ class NowPlayingPoller:
         while True:
             try:
                 await self._tick()
-            except OSError as exc:
-                print(f"poll error: {exc}")
+            except Exception:
+                traceback.print_exc()
             await asyncio.sleep(POLL_SECONDS)

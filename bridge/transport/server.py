@@ -73,6 +73,10 @@ def build_app(poller: NowPlayingPoller, analyzer) -> web.Application:
             print(f"audio capture unavailable: {exc}")
         app["tasks"] = [asyncio.create_task(poller.run()), asyncio.create_task(audio_loop())]
 
+    async def close_sockets(_: web.Application) -> None:
+        for ws in [*sockets, *audio_sockets]:
+            await ws.close()
+
     async def stop_tasks(_: web.Application) -> None:
         for task in app["tasks"]:
             task.cancel()
@@ -83,5 +87,6 @@ def build_app(poller: NowPlayingPoller, analyzer) -> web.Application:
     app.router.add_get("/cover", cover_handler)
     app.router.add_get("/now-playing", now_playing_handler)
     app.on_startup.append(start_tasks)
+    app.on_shutdown.append(close_sockets)
     app.on_cleanup.append(stop_tasks)
     return app
