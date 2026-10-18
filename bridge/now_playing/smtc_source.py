@@ -36,6 +36,16 @@ async def _read_thumbnail(props) -> bytes | None:
         return None
 
 
+ARTIST_ALBUM_SEPARATOR = " — "
+
+
+def _split_artist_album(artist: str, album: str) -> tuple[str, str]:
+    if album or ARTIST_ALBUM_SEPARATOR not in artist:
+        return artist, album
+    name, _, album_name = artist.partition(ARTIST_ALBUM_SEPARATOR)
+    return name, album_name
+
+
 def _status_name(code: int) -> str:
     return {PLAYING: "playing", PAUSED: "paused"}.get(int(code), "stopped")
 
@@ -54,10 +64,11 @@ class SmtcSource:
             if not props.title:
                 return None
             timeline = session.get_timeline_properties()
+            artist, album = _split_artist_album(props.artist, props.album_title)
             return SmtcSnapshot(
                 title=props.title,
-                artist=props.artist,
-                album=props.album_title,
+                artist=artist,
+                album=album,
                 status=_status_name(session.get_playback_info().playback_status),
                 position=timeline.position.total_seconds(),
                 duration=timeline.end_time.total_seconds(),
