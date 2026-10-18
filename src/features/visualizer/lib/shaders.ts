@@ -13,6 +13,8 @@ out vec4 outColor;
 uniform vec2 uRes;
 uniform float uTime;
 uniform float uPhase;
+uniform float uBeatPhase;
+uniform float uWaveAmp;
 uniform sampler2D uCover;
 uniform vec3 uC0, uC1, uC2, uC3;
 uniform float uBass, uVoice, uGuitarL, uGuitarR, uFade;
@@ -42,6 +44,10 @@ void main() {
   float cs = cos(twist);
   float sn = sin(twist);
   q = mat2(cs, -sn, sn, cs) * q;
+
+  q.x += uWaveAmp * 0.05 * sin(p.y * 7.0 + uBeatPhase);
+  q.y += uWaveAmp * 0.04 * sin(p.x * 6.0 - uBeatPhase * 0.5 + p.y * 2.0);
+  q += (p / max(r, 0.0001)) * uWaveAmp * 0.03 * sin(r * 14.0 - uBeatPhase);
 
   for (int i = 0; i < PULSES; i++) {
     vec4 pulse = uPulses[i];

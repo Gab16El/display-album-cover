@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useAppSelector } from '../../../app/hooks'
 import { BRIDGE_HTTP_URL } from '../../../shared/config/env'
-import { selectCoverVersion, selectGenre, selectPalette } from '../../now-playing/model/selectors'
+import { selectCoverVersion, selectGenre, selectPalette, selectPlayback } from '../../now-playing/model/selectors'
 import type { Palette } from '../../now-playing/model/types'
 import { connectAudioSocket } from '../../audio-input/api/audioSocket'
 import { blurCover } from '../lib/blurCover'
@@ -22,12 +22,21 @@ export function Visualizer() {
   const palette = useAppSelector(selectPalette)
   const genre = useAppSelector(selectGenre)
   const coverVersion = useAppSelector(selectCoverVersion)
-  const inputsRef = useRef<VisualizerInputs>({ colors: FALLBACK_COLORS, params: paramsForGenre(null) })
+  const playback = useAppSelector(selectPlayback)
+  const inputsRef = useRef<VisualizerInputs>({
+    colors: FALLBACK_COLORS,
+    params: paramsForGenre(null),
+    playing: false,
+  })
   const imageRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
-    inputsRef.current = { colors: colorsFromPalette(palette), params: paramsForGenre(genre) }
-  }, [palette, genre])
+    inputsRef.current = {
+      colors: colorsFromPalette(palette),
+      params: paramsForGenre(genre),
+      playing: playback === 'playing',
+    }
+  }, [palette, genre, playback])
 
   useEffect(() => {
     if (!coverVersion) return

@@ -22,16 +22,25 @@ const SNARE_ONSET = 0.6
 const BASS_ONSET_LEVEL = 0.7
 const BASS_ONSET_RISE = 0.15
 const BASS_COOLDOWN = 0.35
-const PACE_EASE = 0.4
+const PACE_EASE = 1.0
 const NEUTRAL_PACE = 0.4
 const SLOW_BPM = 70
 const FAST_BPM = 150
-const SPEED_MIN = 0.45
-const SPEED_RANGE = 1.4
+const SPEED_MIN = 0.4
+const SPEED_RANGE = 2.4
+const TEMPO_WEIGHT = 0.35
+const DEFAULT_BPM = 100
+const BPM_EASE = 1.2
+const BEAT_PHASE_WRAP = Math.PI * 128
+const WAVE_BASE = 0.3
+const WAVE_EASE = 10
+const PAUSED_CALM = 0.06
+const CALM_EASE = 1.5
 
 export interface VisualizerInputs {
   colors: [string, string, string, string]
   params: VisualParams
+  playing: boolean
 }
 
 export interface VisualizerSource {
@@ -39,7 +48,7 @@ export interface VisualizerSource {
   takeImage: () => TexImageSource | null
 }
 
-const PARAM_KEYS: (keyof VisualParams)[] = ['flow', 'distort', 'halo', 'ripple', 'grain', 'speed']
+const PARAM_KEYS: (keyof VisualParams)[] = ['flow', 'distort', 'wave', 'halo', 'ripple', 'grain', 'speed']
 const COLOR_UNIFORMS = ['uC0', 'uC1', 'uC2', 'uC3']
 
 interface LiveAudio {
@@ -89,6 +98,10 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
   let bassAverage = 0
   let pace = NEUTRAL_PACE
   let phase = 0
+  let beatPhase = 0
+  let bpm = DEFAULT_BPM
+  let waveAmp = 0
+  let calm = 1
   let bassCooldown = 0
   let fade = 0
   let last = performance.now()
@@ -115,8 +128,8 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     for (const key of PARAM_KEYS) params[key] += (target[key] - params[key]) * k
   }
 
-  const readAudio = (now: number): LiveAudio =>
-    now - audioLevels.updatedAt < AUDIO_LIVE_MS ? audioLevels : IDLE_AUDIO
+  const readAudio = (now: number, playing: boolean): LiveAudio =>
+    playing && now - audioLevels.updatedAt < AUDIO_LIVE_MS ? audioLevels : IDLE_AUDIO
 
   const easeAudio = (audio: LiveAudio, dt: number) => {
     const slow = Math.min(1, dt * SLOW_EASE)
@@ -131,7 +144,7 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
 
   const easePace = (audio: LiveAudio, dt: number) => {
     const tempo = Math.min(1, Math.max(0, (audio.bpm - SLOW_BPM) / (FAST_BPM - SLOW_BPM)))
-    const target = audio.bpm > 0 ? 0.5 * tempo + 0.5 * audio.energy : NEUTRAL_PACE
+    const target = audio.bpm > 0 ? TEMPO_WEIGHT * tempo + (1 - TEMPO_WEIGHT) * audio.energy : NEUTRAL_PACE
     pace += (target - pace) * Math.min(1, dt * PACE_EASE)
   }
 
@@ -166,11 +179,17 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     easeParams(inputs.params, Math.min(1, dt * PARAM_EASE))
 
     resize()
-    const audio = readAudio(now)
+    calm += ((inputs.playing ? 1 : PAUSED_CALM) - calm) * Math.min(1, dt * CALM_EASE)
+    const audio = readAudio(now, inputs.playing)
     easeAudio(audio, dt)
     easePace(audio, dt)
-    const speedScale = SPEED_MIN + pace * SPEED_RANGE
+    const speedScale = (SPEED_MIN + pace * SPEED_RANGE) * calm
     phase += dt * params.speed * speedScale
+    bpm += ((audio.bpm > 0 ? audio.bpm : DEFAULT_BPM) - bpm) * Math.min(1, dt * BPM_EASE)
+    beatPhase = (beatPhase + dt * 2 * Math.PI * (bpm / 60) * calm) % BEAT_PHASE_WRAP
+    const waveTarget =
+      params.wave * (WAVE_BASE + (1 - WAVE_BASE) * Math.max(levels.bass, levels.kick)) * (0.25 + 0.75 * calm)
+    waveAmp += (waveTarget - waveAmp) * Math.min(1, dt * WAVE_EASE)
     detectHits(dt, canvas.width / canvas.height)
     pulses.update(dt * speedScale)
     const decay = Math.exp(-dt * HIT_DECAY)
@@ -187,7 +206,9 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     gl.uniform4fv(uniform('uPulses'), pulses.positions)
     gl.uniform1fv(uniform('uKinds'), pulses.kinds)
     gl.uniform1f(uniform('uPhase'), phase)
-    gl.uniform1f(uniform('uFlow'), params.flow * (0.7 + 0.6 * pace))
+    gl.uniform1f(uniform('uBeatPhase'), beatPhase)
+    gl.uniform1f(uniform('uWaveAmp'), waveAmp)
+    gl.uniform1f(uniform('uFlow'), params.flow * (0.7 + 0.6 * pace) * (0.4 + 0.6 * calm))
     gl.uniform1f(uniform('uDistort'), params.distort)
     gl.uniform1f(uniform('uHalo'), params.halo)
     gl.uniform1f(uniform('uRipple'), params.ripple)
