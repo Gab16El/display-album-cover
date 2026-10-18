@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import secrets
-import socket
 import sys
 import webbrowser
 from pathlib import Path
@@ -10,6 +9,8 @@ from aiohttp import web
 
 from audio_reactive.null_analyzer import NullAnalyzer
 from audio_reactive.synthetic_analyzer import SyntheticAnalyzer
+from launcher.access_info import lan_address, print_banner
+from launcher.mode import LaunchMode, resolve_launch_mode
 from now_playing.mock_source import MockSource
 from now_playing.poller import NowPlayingPoller
 from transport.server import build_app
@@ -32,41 +33,6 @@ def _real_analyzer():
         return NullAnalyzer()
 
 
-def _lan_address() -> str | None:
-    probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        probe.connect(("10.255.255.255", 1))
-        return probe.getsockname()[0]
-    except OSError:
-        return None
-    finally:
-        probe.close()
-
-
-def _print_qr(url: str) -> None:
-    try:
-        import qrcode
-
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        code = qrcode.QRCode(border=1)
-        code.add_data(url)
-        code.print_ascii(invert=True)
-    except (ImportError, OSError):
-        pass
-
-
-def _print_banner(port: int, lan_url: str | None) -> None:
-    print("Display Album Cover")
-    print(f"  This PC : http://localhost:{port}")
-    if lan_url:
-        print(f"  Phone   : {lan_url}")
-        print("  Scan the code below with your phone (same WiFi network).")
-        _print_qr(lan_url)
-        print("  The token is secret and changes on every run. Close this window to quit.")
-    else:
-        print("  Close this window to quit.")
-
-
 async def _open_when_ready(url: str, port: int) -> None:
     for _ in range(READY_ATTEMPTS):
         try:
@@ -87,14 +53,30 @@ def _web_dir() -> Path | None:
     return candidate if (candidate / "index.html").exists() else None
 
 
-def main() -> None:
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Apple Music now playing bridge")
     parser.add_argument("--mock", action="store_true", help="emit fake tracks and a synthetic beat")
     parser.add_argument("--port", type=int, default=PORT)
+    parser.add_argument(
+        "--mode",
+        choices=[mode.value for mode in LaunchMode],
+        help="pc: browser here, phone: QR for other devices, both. Asked at startup if omitted",
+    )
     parser.add_argument("--no-browser", action="store_true", help="do not open the web view")
-    parser.add_argument("--lan", action="store_true", help="also serve other devices on your WiFi")
-    parser.add_argument("--token", help="access token for --lan (random by default)")
-    args = parser.parse_args()
+    parser.add_argument("--lan", action="store_true", help="same as --mode both")
+    parser.add_argument("--token", help="access token for other devices (random by default)")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = _parse_args()
+    web_dir = _web_dir()
+
+    interactive = bool(web_dir) and sys.stdin.isatty() and not (args.mock or args.no_browser)
+    mode = resolve_launch_mode(args.mode, args.lan, interactive)
+    if mode.serves_lan and not web_dir:
+        print("Other devices need the built web app. Run `yarn build` first or use the executable.")
+        mode = LaunchMode.PC
 
     if args.mock:
         poller = NowPlayingPoller(MockSource(), use_itunes=False)
@@ -105,26 +87,25 @@ def main() -> None:
         poller = NowPlayingPoller(SmtcSource())
         analyzer = _real_analyzer()
 
-    web_dir = _web_dir()
-    token = (args.token or secrets.token_urlsafe(TOKEN_BYTES)) if args.lan else None
+    token = (args.token or secrets.token_urlsafe(TOKEN_BYTES)) if mode.serves_lan else None
     app = build_app(poller, analyzer, web_dir, token)
-    url = f"http://localhost:{args.port}"
-    lan_ip = _lan_address() if args.lan else None
-    lan_url = f"http://{lan_ip}:{args.port}/?token={token}" if lan_ip and web_dir else None
-    if web_dir and not args.no_browser:
+
+    if web_dir and mode.opens_browser and not args.no_browser:
+        url = f"http://localhost:{args.port}"
 
         async def open_browser(application: web.Application) -> None:
             application["browser_task"] = asyncio.create_task(_open_when_ready(url, args.port))
 
         app.on_startup.append(open_browser)
+
     if web_dir:
-        _print_banner(args.port, lan_url)
-    elif args.lan:
-        print("--lan needs the built web app. Run `yarn build` first or use the executable.")
+        lan_ip = lan_address() if mode.serves_lan else None
+        lan_url = f"http://{lan_ip}:{args.port}/?token={token}" if lan_ip else None
+        print_banner(mode, args.port, lan_url)
 
     web.run_app(
         app,
-        host=LAN_HOST if args.lan else HOST,
+        host=LAN_HOST if mode.serves_lan else HOST,
         port=args.port,
         print=None if web_dir else print,
     )

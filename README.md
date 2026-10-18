@@ -42,19 +42,23 @@ The web app connects to `ws://localhost:8765/ws`. Override with `VITE_BRIDGE_HOS
 powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
 ```
 
-This builds the web app, bundles it with the bridge using PyInstaller and writes `release\DisplayAlbumCover.exe`. Run it and the browser opens at `http://localhost:8765`. Use `--no-browser` to skip that and `--port` to change the port. The bridge only accepts WebSocket connections from its own origin or from localhost.
+This builds the web app, bundles it with the bridge using PyInstaller and writes `release\DisplayAlbumCover.exe`.
 
-## Use it on your phone or tablet
+## Run the executable
 
-Run the bridge with `--lan` (needs the built web app, so use the executable or run `yarn build` first):
+Double click it and choose how to view it:
 
-```powershell
-release\DisplayAlbumCover.exe --lan
+```
+1) Open here on this PC (browser)
+2) Show a QR code for a phone or tablet
+3) Both
 ```
 
-The console prints a QR code and a link with a secret token. Scan it with a device on the same WiFi network. The token changes on every run, other devices need it, and this PC does not. Windows may ask to allow the app on private networks the first time, and guest networks that isolate devices will not work. Use `--token` to keep a fixed token.
+For a phone or tablet the console prints a QR code and a link with a secret token. Scan it with a device on the same WiFi network. The token changes on every run, other devices need it, and this PC does not. Windows may ask to allow the app on private networks the first time, and guest networks that isolate devices will not work.
 
-Tips: on iPhone use Share, then Add to Home Screen for a full-screen view without the browser bar. Phones lock the screen on their own, so set auto-lock to never while it is on display.
+Skip the question with options: `--mode pc|phone|both`, `--no-browser`, `--port 8765`, `--token <fixed token>`. `--lan` is the same as `--mode both`. The bridge only accepts WebSocket connections from its own origin or from localhost.
+
+Tips for phones: on iPhone use Share, then Add to Home Screen for a full-screen view without the browser bar. Phones lock the screen on their own, so set auto-lock to never while it is on display.
 
 ## Branding
 
@@ -65,6 +69,7 @@ Logo files live in `assets/branding/`: the iridescent and `currentColor` marks, 
 ```
 bridge/
   now_playing/     SMTC reader, cover lookup, palette, poller
+  launcher/        startup mode prompt, QR and access banner
   audio_reactive/  loopback capture and band analysis
   transport/       HTTP and WebSocket server
 src/
