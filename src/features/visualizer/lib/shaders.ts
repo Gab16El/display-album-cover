@@ -12,51 +12,50 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform sampler2D uCover;
 uniform vec3 uC0, uC1, uC2, uC3;
-uniform float uBass, uKick, uSnare, uFade;
-uniform float uWarp, uKaleido, uSwirl, uSpeed, uBlur, uGrade;
+uniform float uBass, uKick, uSnare, uVoice, uGuitarL, uGuitarR, uFade;
+uniform float uRippleRadius, uRippleAmp;
+uniform float uFlow, uRibbons, uHalo, uRipple, uGrain, uSpeed;
 
 vec2 mirror(vec2 x) { return 1.0 - abs(1.0 - mod(x, 2.0)); }
-
-vec3 cover(vec2 p) { return textureLod(uCover, mirror(p + 0.5), uBlur).rgb; }
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
   vec2 p = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
   float t = uTime * uSpeed;
+  float r = length(p);
 
-  if (uKaleido > 1.5) {
-    float seg = 6.2831853 / floor(uKaleido);
-    float a = atan(p.y, p.x) + t * 0.1;
-    a = abs(mod(a, seg) - seg * 0.5);
-    p = length(p) * vec2(cos(a), sin(a));
-  }
-
-  float amp = uWarp * (0.1 + uBass * 0.2 + uKick * 0.3);
+  float amp = uFlow * (0.05 + uBass * 0.07);
   vec2 q = p;
-  for (int i = 0; i < 3; i++) {
-    float fi = float(i);
-    q += amp * vec2(sin(q.y * 3.0 + t + fi * 1.7), cos(q.x * 3.0 - t * 1.1 + fi * 2.3));
-  }
+  q += amp * vec2(sin(q.y * 2.2 + t * 0.7), cos(q.x * 2.2 - t * 0.6));
+  q += amp * 0.6 * vec2(sin(q.y * 4.1 - t * 0.5), cos(q.x * 3.7 + t * 0.4));
+  q *= 0.85 - uKick * 0.02 * uRipple;
 
-  float swirl = uSwirl * (0.4 + uBass * 0.8 + uSnare * 0.4) * exp(-length(q) * 1.2) * sin(t * 0.6);
-  float cs = cos(swirl);
-  float sn = sin(swirl);
-  q = mat2(cs, -sn, sn, cs) * q;
-
-  vec2 tuv = q * (0.9 - uKick * 0.07);
-  float ab = 0.004 + uSnare * 0.02;
-  vec3 col = vec3(
-    cover(tuv + vec2(ab, 0.0)).r,
-    cover(tuv).g,
-    cover(tuv - vec2(ab, 0.0)).b
-  );
-
+  vec3 col = texture(uCover, mirror(q + 0.5)).rgb;
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
-  vec3 ramp = mix(uC3, mix(uC0, uC1, smoothstep(0.35, 0.8, lum)), smoothstep(0.05, 0.5, lum));
-  col = mix(col, ramp * (0.6 + lum), uGrade);
-  col += mix(uC1, uC2, 0.5) * (uKick * 0.14 + uSnare * 0.1);
+  col = mix(vec3(lum), col, 0.6);
+  col = mix(col, col * mix(uC0, uC1, 0.5) * 1.6, 0.25);
+  col *= 0.38;
 
-  float vig = smoothstep(1.25, 0.25, length(uv - 0.5) * 1.5);
-  col *= (0.35 + 0.4 * vig) * uFade;
+  float edge = smoothstep(0.25, 1.0, r);
+  col += uC1 * edge * (0.04 + uBass * 0.16);
+
+  float ring = exp(-pow((r - uRippleRadius) * 7.0, 2.0)) * uRippleAmp * uRipple;
+  col += mix(uC0, uC1, 0.5) * ring * 0.22;
+
+  float halo = exp(-r * r * 2.6) * uVoice * uHalo;
+  col += mix(uC0, vec3(1.0), 0.35) * halo * 0.2;
+
+  float wl = 1.0 - smoothstep(-0.7, 0.1, p.x);
+  float wr = smoothstep(-0.1, 0.7, p.x);
+  float wave = sin(p.y * 5.0 + t * 1.1 + sin(p.x * 3.0 + t * 0.6) * 1.6);
+  float ribbon = pow(0.5 + 0.5 * wave, 6.0);
+  col += uC2 * ribbon * (wl * uGuitarL + wr * uGuitarR) * uRibbons * 0.3;
+
+  float grain = hash(gl_FragCoord.xy + fract(uTime) * 100.0) - 0.5;
+  col += grain * (0.012 + uSnare * 0.05 * uGrain);
+
+  col = 1.0 - exp(-col * 1.4);
+  col *= (0.55 + 0.45 * smoothstep(1.3, 0.2, r * 1.2)) * uFade;
   outColor = vec4(col, 1.0);
 }`

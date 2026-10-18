@@ -5,6 +5,9 @@ interface AudioMessage {
   bass: number
   kick: number
   snare: number
+  voice: number
+  guitarL: number
+  guitarR: number
   level: number
 }
 
@@ -20,6 +23,9 @@ export function connectAudioSocket(): () => void {
       audioLevels.bass = data.bass
       audioLevels.kick = Math.max(data.kick, audioLevels.kick)
       audioLevels.snare = Math.max(data.snare, audioLevels.snare)
+      audioLevels.voice = data.voice
+      audioLevels.guitarL = data.guitarL
+      audioLevels.guitarR = data.guitarR
       audioLevels.level = data.level
       audioLevels.updatedAt = performance.now()
     }

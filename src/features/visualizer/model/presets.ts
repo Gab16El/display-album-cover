@@ -1,19 +1,19 @@
 export interface VisualParams {
-  warp: number
-  kaleido: number
-  swirl: number
+  flow: number
+  ribbons: number
+  halo: number
+  ripple: number
+  grain: number
   speed: number
-  blur: number
-  grade: number
 }
 
-const PSYCHEDELIC: VisualParams = { warp: 1.0, kaleido: 0, swirl: 1.1, speed: 0.6, blur: 3, grade: 0.25 }
-const HEAVY: VisualParams = { warp: 1.3, kaleido: 0, swirl: 1.5, speed: 1.0, blur: 2.5, grade: 0.35 }
-const ELECTRONIC: VisualParams = { warp: 0.5, kaleido: 6, swirl: 0.5, speed: 1.0, blur: 2.5, grade: 0.5 }
-const HIPHOP: VisualParams = { warp: 0.55, kaleido: 0, swirl: 0.3, speed: 0.7, blur: 3, grade: 0.4 }
-const POP: VisualParams = { warp: 0.6, kaleido: 8, swirl: 0.4, speed: 0.6, blur: 4, grade: 0.3 }
-const CALM: VisualParams = { warp: 0.25, kaleido: 0, swirl: 0.2, speed: 0.3, blur: 5, grade: 0.15 }
-const DEFAULT: VisualParams = { warp: 0.5, kaleido: 0, swirl: 0.5, speed: 0.5, blur: 3.5, grade: 0.25 }
+const PSYCHEDELIC: VisualParams = { flow: 0.9, ribbons: 1.0, halo: 0.8, ripple: 0.7, grain: 0.5, speed: 0.6 }
+const HEAVY: VisualParams = { flow: 1.0, ribbons: 1.2, halo: 0.6, ripple: 1.2, grain: 0.9, speed: 0.9 }
+const ELECTRONIC: VisualParams = { flow: 0.5, ribbons: 0.5, halo: 0.5, ripple: 1.3, grain: 0.8, speed: 1.0 }
+const HIPHOP: VisualParams = { flow: 0.5, ribbons: 0.3, halo: 1.0, ripple: 1.2, grain: 0.6, speed: 0.6 }
+const POP: VisualParams = { flow: 0.6, ribbons: 0.6, halo: 1.0, ripple: 0.8, grain: 0.4, speed: 0.6 }
+const CALM: VisualParams = { flow: 0.3, ribbons: 0.5, halo: 0.9, ripple: 0.3, grain: 0.2, speed: 0.3 }
+const DEFAULT: VisualParams = { flow: 0.6, ribbons: 0.7, halo: 0.8, ripple: 0.7, grain: 0.4, speed: 0.5 }
 
 const RULES: [RegExp, VisualParams][] = [
   [/metal|hard rock|punk|grunge/i, HEAVY],

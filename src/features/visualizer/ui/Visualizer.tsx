@@ -4,6 +4,7 @@ import { BRIDGE_HTTP_URL } from '../../../shared/config/env'
 import { selectCoverVersion, selectGenre, selectPalette } from '../../now-playing/model/selectors'
 import type { Palette } from '../../now-playing/model/types'
 import { connectAudioSocket } from '../api/audioSocket'
+import { blurCover } from '../lib/blurCover'
 import { startVisualizer } from '../lib/visualizerEngine'
 import type { VisualizerInputs } from '../lib/visualizerEngine'
 import { paramsForGenre } from '../model/presets'
@@ -22,7 +23,7 @@ export function Visualizer() {
   const genre = useAppSelector(selectGenre)
   const coverVersion = useAppSelector(selectCoverVersion)
   const inputsRef = useRef<VisualizerInputs>({ colors: FALLBACK_COLORS, params: paramsForGenre(null) })
-  const imageRef = useRef<HTMLImageElement | null>(null)
+  const imageRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
     inputsRef.current = { colors: colorsFromPalette(palette), params: paramsForGenre(genre) }
@@ -33,7 +34,7 @@ export function Visualizer() {
     const image = new Image()
     image.crossOrigin = 'anonymous'
     image.onload = () => {
-      imageRef.current = image
+      imageRef.current = blurCover(image)
     }
     image.src = `${BRIDGE_HTTP_URL}/cover?v=${coverVersion}`
     return () => {
