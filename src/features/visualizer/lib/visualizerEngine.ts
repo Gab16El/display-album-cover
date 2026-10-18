@@ -4,6 +4,7 @@ import { audioLevels } from '../model/audioLevels'
 import { paramsForGenre } from '../model/presets'
 import type { VisualParams } from '../model/presets'
 import { createCoverTexture, createProgram, uploadCover } from './gl'
+import { PulsePool } from './pulses'
 import { FRAGMENT_SHADER, VERTEX_SHADER } from './shaders'
 
 const RENDER_SCALE = 0.75
@@ -13,12 +14,14 @@ const COLOR_EASE = 2
 const PARAM_EASE = 1.5
 const SLOW_EASE = 5
 const FAST_EASE = 14
+const BASS_AVERAGE_EASE = 1.2
 const HIT_DECAY = 7
 const CONTRAST = 2
 const KICK_ONSET = 0.55
-const RIPPLE_SPEED = 0.9
-const RIPPLE_MAX_RADIUS = 1.4
-const RIPPLE_FADE = 1.6
+const SNARE_ONSET = 0.6
+const BASS_ONSET_LEVEL = 0.7
+const BASS_ONSET_RISE = 0.15
+const BASS_COOLDOWN = 0.35
 
 export interface VisualizerInputs {
   colors: [string, string, string, string]
@@ -30,7 +33,7 @@ export interface VisualizerSource {
   takeImage: () => TexImageSource | null
 }
 
-const PARAM_KEYS: (keyof VisualParams)[] = ['flow', 'ribbons', 'halo', 'ripple', 'grain', 'speed']
+const PARAM_KEYS: (keyof VisualParams)[] = ['flow', 'distort', 'halo', 'ripple', 'grain', 'speed']
 const COLOR_UNIFORMS = ['uC0', 'uC1', 'uC2', 'uC3']
 
 interface LiveAudio {
@@ -64,8 +67,10 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
   const colors: Rgb[] = [0, 1, 2, 3].map(() => [0.04, 0.04, 0.06] as Rgb)
   const params: VisualParams = { ...paramsForGenre(null) }
   const levels: LiveAudio = { ...IDLE_AUDIO }
-  const ripple = { radius: RIPPLE_MAX_RADIUS, amp: 0 }
-  let previousKick = 0
+  const pulses = new PulsePool()
+  const previous = { kick: 0, snare: 0 }
+  let bassAverage = 0
+  let bassCooldown = 0
   let fade = 0
   let last = performance.now()
   let frameId = 0
@@ -105,14 +110,19 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     levels.snare = audio.snare
   }
 
-  const updateRipple = (dt: number) => {
-    if (levels.kick > KICK_ONSET && previousKick <= KICK_ONSET) {
-      ripple.radius = 0
-      ripple.amp = 1
+  const detectHits = (dt: number, aspect: number) => {
+    if (levels.kick > KICK_ONSET && previous.kick <= KICK_ONSET) pulses.spawn(0, aspect)
+    if (levels.snare > SNARE_ONSET && previous.snare <= SNARE_ONSET) pulses.spawn(1, aspect)
+    previous.kick = levels.kick
+    previous.snare = levels.snare
+
+    bassCooldown = Math.max(0, bassCooldown - dt)
+    const rising = levels.bass - bassAverage
+    if (bassCooldown === 0 && levels.bass > BASS_ONSET_LEVEL && rising > BASS_ONSET_RISE) {
+      pulses.spawn(2, aspect)
+      bassCooldown = BASS_COOLDOWN
     }
-    previousKick = levels.kick
-    ripple.radius = Math.min(RIPPLE_MAX_RADIUS, ripple.radius + dt * RIPPLE_SPEED)
-    ripple.amp = Math.max(0, ripple.amp - dt * RIPPLE_FADE)
+    bassAverage += (levels.bass - bassAverage) * Math.min(1, dt * BASS_AVERAGE_EASE)
   }
 
   const frame = (now: number) => {
@@ -130,26 +140,25 @@ export function startVisualizer(canvas: HTMLCanvasElement, source: VisualizerSou
     easeColors(inputs.colors, Math.min(1, dt * COLOR_EASE))
     easeParams(inputs.params, Math.min(1, dt * PARAM_EASE))
 
+    resize()
     easeAudio(readAudio(now), dt)
-    updateRipple(dt)
+    detectHits(dt, canvas.width / canvas.height)
+    pulses.update(dt)
     const decay = Math.exp(-dt * HIT_DECAY)
     audioLevels.kick *= decay
     audioLevels.snare *= decay
 
-    resize()
     gl.uniform2f(uniform('uRes'), canvas.width, canvas.height)
     gl.uniform1f(uniform('uTime'), now / 1000)
     gl.uniform1f(uniform('uFade'), fade)
     gl.uniform1f(uniform('uBass'), levels.bass)
-    gl.uniform1f(uniform('uKick'), levels.kick)
-    gl.uniform1f(uniform('uSnare'), levels.snare)
     gl.uniform1f(uniform('uVoice'), levels.voice)
     gl.uniform1f(uniform('uGuitarL'), levels.guitarL)
     gl.uniform1f(uniform('uGuitarR'), levels.guitarR)
-    gl.uniform1f(uniform('uRippleRadius'), ripple.radius)
-    gl.uniform1f(uniform('uRippleAmp'), ripple.amp)
+    gl.uniform4fv(uniform('uPulses'), pulses.positions)
+    gl.uniform1fv(uniform('uKinds'), pulses.kinds)
     gl.uniform1f(uniform('uFlow'), params.flow)
-    gl.uniform1f(uniform('uRibbons'), params.ribbons)
+    gl.uniform1f(uniform('uDistort'), params.distort)
     gl.uniform1f(uniform('uHalo'), params.halo)
     gl.uniform1f(uniform('uRipple'), params.ripple)
     gl.uniform1f(uniform('uGrain'), params.grain)
