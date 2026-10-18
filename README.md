@@ -1,75 +1,50 @@
-# React + TypeScript + Vite
+# display-album-cover
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Shows the song playing in Apple Music for Windows as a full-screen web view that adopts the colors of the album cover. A later phase targets an ESP32 display.
 
 ```
+Apple Music (Windows SMTC) -> Python bridge -> WebSocket -> React web app
+```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Requirements
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Windows 10/11 with the Apple Music app (Microsoft Store)
+- Node 20+ and Python 3.11+
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Run
+
+Bridge:
+
+```bash
+cd bridge
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\python main.py          # real Apple Music
+.venv\Scripts\python main.py --mock   # fake tracks for UI work
+```
+
+Web:
+
+```bash
+yarn install
+yarn dev
+```
+
+The web app connects to `ws://localhost:8765/ws`. Override with `VITE_BRIDGE_HOST`.
+
+## Structure
 
 ```
+bridge/
+  now_playing/   SMTC reader, cover lookup, palette, poller
+  transport/     HTTP and WebSocket server
+src/
+  app/           store, hooks, root component
+  features/
+    now-playing/        slice, socket middleware, screen components
+    ambient-background/ animated color background
+    fullscreen/         fullscreen toggle
+  shared/        config and small helpers
+```
+
+Covers are resolved through the public iTunes Search API, falling back to the SMTC thumbnail.

@@ -1,0 +1,20 @@
+.ambient {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambient__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.75;
+  will-change: transform;
+}
+
+.ambient__grain {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgb(0 0 0 / 0.45) 100%);
+}

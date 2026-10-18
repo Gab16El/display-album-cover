@@ -1,0 +1,26 @@
+.idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.idle__pulse {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-bottom: 1rem;
+}
+
+.idle__title {
+  margin: 0;
+  font-size: clamp(1.4rem, 4vmin, 2.4rem);
+  font-weight: 600;
+}
+
+.idle__hint {
+  margin: 0;
+  opacity: 0.6;
+}

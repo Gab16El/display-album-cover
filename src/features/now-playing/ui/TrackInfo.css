@@ -1,0 +1,28 @@
+.track {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.track__title {
+  margin: 0;
+  font-size: clamp(1.8rem, 5.2vmin, 4rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.track__artist {
+  margin: 0;
+  font-size: clamp(1.1rem, 3vmin, 2rem);
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.track__album {
+  margin: 0;
+  font-size: clamp(0.9rem, 2.2vmin, 1.4rem);
+  opacity: 0.55;
+}
