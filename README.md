@@ -10,9 +10,25 @@
 
 Shows the song playing in Apple Music for Windows as a full-screen web view that adopts the colors of the album cover. A later phase targets an ESP32 display.
 
+<p align="center">
+  <img src="assets/screenshots/preview.webp" alt="Animated preview: the cover glows and pulses ripple through the background" width="720" />
+</p>
+
 ```
 Apple Music (Windows SMTC) -> Python bridge -> WebSocket -> React web app
 ```
+
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="assets/screenshots/desktop-electronic.jpg" alt="Electronic track on desktop" /></td>
+    <td><img src="assets/screenshots/desktop-alternative.jpg" alt="Alternative track on desktop" /></td>
+    <td><img src="assets/screenshots/phone-portrait.jpg" alt="Phone in portrait" width="160" /></td>
+  </tr>
+</table>
+
+These were captured with the built-in demo source (`--mock`), which draws its own covers, so no real album artwork is stored in this repository. The colors, glow and distortion follow whatever is playing.
 
 ## Requirements
 
