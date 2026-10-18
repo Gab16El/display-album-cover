@@ -1,6 +1,6 @@
 import { hexToRgb } from '../../../shared/lib/color'
 import type { Rgb } from '../../../shared/lib/color'
-import { audioLevels } from '../model/audioLevels'
+import { audioLevels } from '../../audio-input/model/audioLevels'
 import { paramsForGenre } from '../model/presets'
 import type { VisualParams } from '../model/presets'
 import { createCoverTexture, createProgram, uploadCover } from './gl'

@@ -42,6 +42,21 @@ void main() {
   float sn = sin(twist);
   q = mat2(cs, -sn, sn, cs) * q;
 
+  for (int i = 0; i < PULSES; i++) {
+    vec4 pulse = uPulses[i];
+    if (pulse.w <= 0.0) continue;
+    vec2 away = p - pulse.xy;
+    float d = length(away);
+    vec2 dir = away / max(d, 0.0001);
+    if (uKinds[i] < 0.5) {
+      q -= dir * exp(-pow((d - pulse.z) * 6.0, 2.0)) * pulse.w * 0.07 * uRipple;
+    } else if (uKinds[i] < 1.5) {
+      q -= dir * exp(-pow((d - pulse.z) * 14.0, 2.0)) * pulse.w * 0.035 * uRipple;
+    } else {
+      q -= away * exp(-d * d / (pulse.z * pulse.z + 0.02)) * pulse.w * 0.35 * uRipple;
+    }
+  }
+
   float ab = 0.002 + dist * 0.014;
   vec3 col = vec3(cover(q + vec2(ab, 0.0)).r, cover(q).g, cover(q - vec2(ab, 0.0)).b);
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
@@ -51,19 +66,6 @@ void main() {
 
   float edge = smoothstep(0.25, 1.0, r);
   col += uC1 * edge * (0.04 + uBass * 0.12);
-
-  for (int i = 0; i < PULSES; i++) {
-    vec4 pulse = uPulses[i];
-    if (pulse.w <= 0.0) continue;
-    float d = length(p - pulse.xy);
-    if (uKinds[i] < 0.5) {
-      col += mix(uC0, uC1, 0.5) * exp(-pow((d - pulse.z) * 7.0, 2.0)) * pulse.w * 0.22 * uRipple;
-    } else if (uKinds[i] < 1.5) {
-      col += mix(uC2, vec3(1.0), 0.3) * exp(-pow((d - pulse.z) * 16.0, 2.0)) * pulse.w * 0.16 * uRipple;
-    } else {
-      col += uC1 * exp(-d * d / (pulse.z * pulse.z + 0.02)) * pulse.w * 0.2 * uRipple;
-    }
-  }
 
   float halo = exp(-r * r * 2.6) * uVoice * uHalo;
   col += mix(uC0, vec3(1.0), 0.35) * halo * 0.2;

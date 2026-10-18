@@ -44,7 +44,8 @@ src/
   features/
     now-playing/        slice, socket middleware, screen components
     ambient-background/ animated color background
-    visualizer/         WebGL shader, audio socket, genre presets
+    audio-input/        audio levels socket and shared state
+    visualizer/         WebGL shader, pulse pool, genre presets
     fullscreen/         fullscreen toggle
   shared/        config and small helpers
 ```
